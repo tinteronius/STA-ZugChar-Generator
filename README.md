@@ -30,5 +30,5 @@ Mehrstufige Skripte zur Ermittlung passender Charakteristiken für die STA.
    => Input der für die STA
    -> Ordner filled_table 
    
-=======
+___
 
