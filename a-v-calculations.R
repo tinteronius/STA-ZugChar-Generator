@@ -1,11 +1,23 @@
-setwd("/home/daniel/Dokumente/Systematisierung Analyse 2015/Pauls Skripte/")
+
+STAMMDATEN_FILEPATH = "2013-Stammdaten_ST-STTriebfahrzeugbaureihen121-komplett.xml"
+FAHRLAGEN_FILEPATH = "./2013_Fahrlagen/Fahrlagen_14.11.2013_final_v02.csv"
+FINVEBTS_FILEPATH = "./2013_Fahrlagen/FinVeBTS.csv"
+
+# Checking Block if execution is safe
+  if (! file.exists(STAMMDATEN_FILEPATH)) {
+  stop(paste0(STAMMDATEN_FILEPATH, " not found ! - Please set working directory."))
+} else if (! file.exists(FAHRLAGEN_FILEPATH)) {
+  stop(paste0(FAHRLAGEN_FILEPATH, " not found ! - Please set working directory."))
+} else if (! file.exists(FINVEBTS_FILEPATH)) {
+  stop(paste0(FINVEBTS_FILEPATH, " not found ! - Please set working directory."))
+} else {
+
 library(XML)
 
+data <- read.csv2(file = FAHRLAGEN_FILEPATH, stringsAsFactors = F)
+finveBTS <- read.csv2(file = FINVEBTS_FILEPATH, stringsAsFactors = F)
 
-data <- read.csv2(file = "./2013_Fahrlagen/Fahrlagen_14.11.2013_final_v02.csv", stringsAsFactors = F)
-finveBTS <- read.csv2(file = "FinVeBTS.csv", stringsAsFactors = F)
-
-stammdatenDatei <- readLines("2013-Stammdaten_ST-STTriebfahrzeugbaureihen121-komplett.xml")
+stammdatenDatei <- readLines(STAMMDATEN_FILEPATH)
 tree <- xmlTreeParse(stammdatenDatei, asText=TRUE)
 tfz <- tree[[1]][[1]][[5]][[15]]
 
@@ -131,3 +143,6 @@ getReduction <- function(a0, amax){
                    (pct >= 0.55) * 0.516 * r)
     }
 }
+
+# #
+} # End of checking block
