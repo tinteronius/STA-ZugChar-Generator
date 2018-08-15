@@ -1,9 +1,9 @@
-setwd("/home/daniel/Dokumente/Systematisierung Analyse 2015/Pauls Skripte/")
-
+# # # # # # # # # # # # # # 
+# ! # Change Working directory: Session > Set Working Directory > To Source File Location
+# # #
 
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
-
 
 files <- list.files("./2013_Fahrlagen/ERIKA_STA/neu/neu", full.names = T, pattern = ".csv$")
 allSta <- unlist(lapply(strsplit(files, "_"), function(x){x[4]}))

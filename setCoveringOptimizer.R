@@ -1,4 +1,6 @@
-setwd("/home/daniel/Dokumente/sta/")
+# # # # # # # # # # # # # # 
+# ! # Change Working directory: Session > Set Working Directory > To Source File Location
+# # #
 
 library(lpSolveAPI)
 library(ggplot2)

@@ -1,5 +1,6 @@
-setwd("D:/Users/DanielPoehle/Desktop/LAB-Abstimmung/Zuglaufabschnitte/Systematisierung Analyse 2015/Pauls Skripte")
-
+# # # # # # # # # # # # # # 
+# ! # Change Working directory: Session > Set Working Directory > To Source File Location
+# # #
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
 
