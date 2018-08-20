@@ -1,8 +1,4 @@
 
-STAMMDATEN_FILEPATH = "2013-Stammdaten_ST-STTriebfahrzeugbaureihen121-komplett.xml"
-FAHRLAGEN_FILEPATH = "./2013_Fahrlagen/Fahrlagen_14.11.2013_final_v02.csv"
-FINVEBTS_FILEPATH = "./2013_Fahrlagen/FinVeBTS.csv"
-
 # Checking Block if execution is safe
   if (! file.exists(STAMMDATEN_FILEPATH)) {
   stop(paste0(STAMMDATEN_FILEPATH, " not found ! - Please set working directory."))

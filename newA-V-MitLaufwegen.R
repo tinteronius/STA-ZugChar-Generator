@@ -5,15 +5,20 @@
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
 
-files <- list.files("./2013_Fahrlagen/ERIKA_STA/neu/neu", full.names = T, pattern = ".csv$")
+# Contents
+# . Preparing STAs and Fahrlagen for further calculations
+
+
+# # # # # # # # # # # # # # 
+# Maping STA and BTS
+
+if (DO_MAPPING_STA_BTS) { # Checking Block if Mapping enabled
+
+files <- list.files(STA_FOLDER, full.names = T, pattern = ".csv$")
 allSta <- unlist(lapply(strsplit(files, "_"), function(x){x[4]}))
 staNumber <- sort(unique(allSta))
 
-ofiles <- list.files("./2013_Fahrlagen/ERIKA_STA", full.names = T, pattern = ".csv$")
-oallSta <- unlist(lapply(strsplit(ofiles, "_"), function(x){x[4]}))
-ostaNumber <- c(sort(unique(oallSta)), "xxx")
-y <- data.frame(old = ostaNumber, new = staNumber, stringsAsFactors = F)
-
+# Map which BTS belong to a STA
 sta <- data.frame(ID <- integer(0), BTS = integer(0), stringsAsFactors = F)
 
 for(s in staNumber){
@@ -32,12 +37,22 @@ for(s in staNumber){
     sta <- rbind(sta, data.frame(ID = s, BTS = bts, stringsAsFactors = F))
 }
 
+# Manual Refactorings
 id <- c("1", "5", "9A", "173C")
 bts <- c("AWLB", "AWLB", "AWLB", "RSG")
 sta <- rbind(sta, data.frame(ID = id, BTS = bts, stringsAsFactors = F))
 
 
-write.csv2(sta, file = "./2013_Fahrlagen/180214_STA.csv", row.names = F)
+write.csv2(sta, file = helper.getResultPath(BTS2STA_FILEPATH), row.names = F)
+
+} else { # Checking Block if Mapping enabled
+  
+  sta <- read.csv2(file = helper.getResultPath(BTS2STA_FILEPATH), stringsAsFactors = F)
+  
+}
+
+# # # # # # # # # # # # # # 
+# DEBUGGING?
 
 for(w in finveBTS$FinVe.BTS){
     if(w %in% sta$BTS){next()}
@@ -45,7 +60,11 @@ for(w in finveBTS$FinVe.BTS){
 }
 
 
-############ calculate if two STA overlap ##################
+# # # # # # # # # # # # # # 
+# calculate if two STA overlap
+# . Known Issue: Error when multiple groups found -> merge into new big group??
+
+if (DO_OVERLAPPING) { # Checking Block if Overlapping enabled
 overlappings <- data.frame(STA = staNumber, PARTNERS = integer(length(staNumber)),
                            BIG_OVERLAP = integer(length(staNumber)),
                            RATIO_OVERLAP = integer(length(staNumber)),
@@ -99,7 +118,7 @@ id <- 1
 partner <- 1000
 
 for(i in 1:length(overlappings$STA)){
-#for(i in 1:32){
+
     tempID <- staGroups$GROUP[i]
     tempPartner <- staGroups$PARTNER[i]
     if(is.na(tempID)){
@@ -119,7 +138,7 @@ for(i in 1:length(overlappings$STA)){
     if(any(!is.na(succ_group))){
         print(paste(i, succ[!is.na(succ_group)], "is already in a group!"))
         gr <- unique(succ_group[!is.na(succ_group)])
-        if(length(gr) > 1){stop(i, gr, "multiple groups!")}
+        if(length(gr) > 1){stop(i, " ", gr, " multiple groups!")}
         staGroups[which(staGroups$ID %in% succ),"GROUP"][is.na(succ_group)] <- gr
         staGroups$GROUP[i] <- gr
     }else{
@@ -130,7 +149,7 @@ for(i in 1:length(overlappings$STA)){
     if(any(!is.na(succ_p_group))){
         print(paste(i, succ_p[!is.na(succ_p_group)], "has already a partner!"))
         pa <- unique(succ_p_group[!is.na(succ_p_group)])
-        if(length(pa) > 1){stop(i, gr, "multiple partners!")}
+        if(length(pa) > 1){stop(i, " ", gr, " multiple partners!")}
         staGroups[which(staGroups$ID %in% succ_p),"PARTNER"][is.na(succ_p_group)] <- pa
         staGroups$PARTNER[i] <- pa
     }else{
@@ -140,6 +159,7 @@ for(i in 1:length(overlappings$STA)){
 
 staGroups$PARTNER[is.na(staGroups$PARTNER)] <- ""
 
+# DEBUGGING?
 for(i in 1:82){
     if(length(staGroups$ID[staGroups$GROUP == i])==0){next()}
     print(paste(i, paste(staGroups$ID[staGroups$GROUP == i], collapse = "#")))
@@ -149,17 +169,30 @@ for(i in 1000:1015){
     print(paste(i, paste(staGroups$ID[staGroups$PARTNER == i][!is.na(staGroups$ID[staGroups$PARTNER == i])], collapse = "#")))
 }
 
-#write.csv2(staGroups, file = "./2013_Fahrlagen/STAGROUPS_v03.csv", row.names = F)
-staGroups <- read.csv2(file = "./2013_Fahrlagen/STAGROUPS_v06.csv", stringsAsFactors = F)
+write.csv2(staGroups, file = helper.getResultPath(STAGROUPS_FILEPATH), row.names = F)
 
+} else { # Checking Block if Overlapping enabled
+  
+  staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsAsFactors = F)  
+
+}
+
+# # # # # # # # # # # # # # 
+# Meassure share (STAFIT) Fahrlage on STA
+
+if (DO_STAFIT) { # Checking Block if STAFIT enabled
+
+# Load data
+data <- read.csv2(file = FAHRLAGEN_FILEPATH, stringsAsFactors = F)
+finveBTS <- read.csv2(file = FINVEBTS_FILEPATH, stringsAsFactors = F)
 
 wayPoints <- strsplit(data$WAY, "#")
 
-data$STA_FIT <- integer(length(data$ANFORDERUNGID))
+data$STA_FIT <- integer(nrow(data))
 grp <- sort(unique(staGroups$GROUP))
 
-for(i in 1:length(data$ANFORDERUNGNAME)){
-    print(i)
+for(i in 1:nrow(data)){
+    cat (i, " / ", nrow(data),"\n")
     if(length(wayPoints[[i]]) < 5){next()}
     for(j in grp){
         staNames <- staGroups$ID[staGroups$GROUP == j]
@@ -177,10 +210,20 @@ for(i in 1:length(data$ANFORDERUNGNAME)){
 }
     
 sum(data$STA_FIT != 0)    
-write.csv2(data, file = "./2013_Fahrlagen/Fahrlagen_14.11.2013_final_v07_STAFIT.csv", row.names = F) 
-data <- read.csv2(file = "./2013_Fahrlagen/Fahrlagen_14.11.2013_final_v07_STAFIT.csv", stringsAsFactors = F)
-sta <- read.csv2(file = "./2013_Fahrlagen/180214_STA.csv", stringsAsFactors = F)
+write.csv2(data, file = helper.getResultPath(FAHRLAGEN_STAFIT_FILEPATH), row.names = F) 
 
+} else { # Checking Block if Overlapping enabled
+  
+  data <- read.csv2(file = helper.getResultPath(FAHRLAGEN_STAFIT_FILEPATH), stringsAsFactors = F)
+  
+}
+
+# # # # # # # # # # # # # # 
+# Map Fahrlagen to STA (...groups)
+
+helper.safeCreateFolder(helper.getResultPath(STA_RESULT_FOLDER))
+sta_resultfile_prefix = paste0(helper.getResultPath(STA_RESULT_FOLDER), "STA_")
+  
 staList <- strsplit(data$STA_FIT, "#")
     
 for(i in 1:length(staNumber)){
@@ -192,7 +235,7 @@ for(i in 1:length(staNumber)){
                          TOTALWEIGHT = integer(0), BREAKCLASS = integer(0),
                          BrH = integer(0), LZB = integer(0), ELECTRIC = integer(0),
                          TRAINCLASS = integer(0), stringsAsFactors = F)
-        write.csv2(df, file = paste0("./result_detail_v9/STAs/STA_", staNumber[i], ".csv"))
+        write.csv2(df, file = paste0(sta_resultfile_prefix, staNumber[i], ".csv"))
         next()
         }
     
@@ -313,7 +356,7 @@ for(i in 1:length(staNumber)){
                                                 "Schluessel", "0")) != 0
     }
     
-    write.csv2(df, file = paste0("./result_detail_v9/STAs/STA_", staNumber[i], ".csv"))
+    write.csv2(df, file = paste0(sta_resultfile_prefix, staNumber[i], ".csv"))
     
     print(paste("STA", staNumber[i], length(df$TRAINRUN)))
 }
@@ -322,7 +365,7 @@ for(i in 1:length(staNumber)){
     
 ################ STOP HERE AND CONTINUE WITH NEXT FILE #############################################################   
     
-
+if (F) {
 
 staAssignment <- data.frame(STA = integer(length(staNumber)), BTSn = integer(length(staNumber)), stringsAsFactors = F)
 
@@ -524,3 +567,5 @@ elem <- tfzNames[tfzNames$name == "140-1", ]
 avModel <- getAVModel(elem$i, elem$j, 1600, 1)
 avModel[41,]
 avModel[81,]
+
+} # if False
