@@ -15,15 +15,18 @@ staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsA
 staGroups$PARTNER[is.na(staGroups$PARTNER)] <- ""
 
 dt <- read.csv2(file = helper.getResultPath(TEMP_TFZ_FRAME_FILEPATH))
-dt$VMAX <- NULL
-dt <- unique(dt)
+dt <- dt[!duplicated(dt[, c("TOTALWEIGHT", "BREAKCLASS", "TFZ", "NUM_TFZ")]),]
 dt <- dt[dt$TOTALWEIGHT >= 500,]
 
+dt$T10WithI <- NULL
 avList <- list()
 for(j in 1:nrow(dt)){
     cat (j, "/", nrow(dt),"\n")
     elem <- tfzNames[tfzNames$name == dt$TFZ[j], ]
-    avList <- c(avList, list(getAVModel(elem$i, elem$j, dt$TOTALWEIGHT[j], dt$NUM_TFZ[j], addTfzMass = T)))
+    avModel = getAVModel(elem$i, elem$j, dt$TOTALWEIGHT[j], dt$NUM_TFZ[j], addTfzMass = T)
+    avList <- c(avList, list(avModel))
+    
+    dt$T10WithI = calculate10kmWithI(avModel, dt$VMAX[j], dt$BREAKCLASS[j], 7) 
     
 }
 
@@ -35,6 +38,7 @@ for(i in 1:length(files)){
 
 ds <- tempFrame[!duplicated(tempFrame[,c("TFZ", "TOTALWEIGHT", "NUM_TFZ")]),c("TFZ", "TOTALWEIGHT", "NUM_TFZ", "VMAX")]
 #ds <- rbind(dt, data.frame(TRACTION = c("189-2", "185-2", "185-2", "185-2", "203-1"), TOTALMASS = c(2945, 4000, 5000, 5500, 1950), DOUBLETRACTION = F, VMAX = 100, stringsAsFactors = F))
+
 
 avSTA <- list()
 for(j in 1:nrow(ds)){
@@ -51,7 +55,7 @@ helper.safeCreateFolder(helper.getResultPath(BOTTOMUP_RESULT_FOLDER))
 helper.safeCreateFolder(helper.getResultPath(A_FRAME_RESULT_FOLDER))
 
 for(i in 1:nrow(staGroups)){
-    cat (i, "/", nrow(staGroups), "|", staGroups$ID[i] ,"\n")
+    cat ("STA ", staGroups$ID[i], " (", i, "/", nrow(staGroups), ")", "\n")
   
     tempFrame <- read.csv2(file = paste0(sta_resultfile_prefix, staGroups$ID[i], ".csv"), stringsAsFactors = F)
     if(staGroups$PARTNER[i] != ""){
@@ -74,8 +78,7 @@ for(i in 1:nrow(staGroups)){
     
     a_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
     
-    timestamp()
-    print(paste0("STA ", staGroups$ID[i], ": calculate a_frame"))
+    cat(paste0("calculate a_frame | ", Sys.time(), "\n"))
     for(j in 1:length(avList)){
         ind <- max(which(avList[[j]]$a >=0 & !is.na(avList[[j]]$s_kum)))
         vmax <- min(avList[[j]]$v[ind], dt$VMAX[j])
@@ -142,7 +145,7 @@ for(i in 1:nrow(staGroups)){
     
     df <- df[df$total_res >= 0.9,]
     all90 <- cbind(df, dt[df$a,])
-	# RÃ¼ckfrage! (auskommentiert!)
+	  # Rückfrage! (auskommentiert?)
     df <- df[order(df$a_res, df$v_res, df$b_res, df$c_res),]
     
     # find not domiated solutinos only
@@ -181,8 +184,7 @@ for(i in 1:nrow(staGroups)){
     # 
     # sol <- cbind(sol, dt[sol$a,])
     
-    timestamp()
-    print(paste0("STA ",staGroups$ID[i], ": calculate T10"))
+    cat(paste0("calculate T10 | ", Sys.time(), "\n"))
     # t10 <- integer(0)
     # for(n in 1:length(sol$a)){
     #     elem <- tfzNames[tfzNames$name == sol$TFZ[n], ]
@@ -208,7 +210,7 @@ for(i in 1:nrow(staGroups)){
     
     all90$T10 <- t10
     
-	if(sum(t10 < 20000) <=0){
+	  if(sum(t10 < 20000) <=0){
       s <- sort(unique(t10))[20]
       all90 <- all90[t10 <= s,]
     }else{
