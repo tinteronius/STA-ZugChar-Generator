@@ -1,4 +1,4 @@
-
+helper.included = T
 # Contents
 # . Helper Functions for File Handling
 
@@ -18,3 +18,6 @@ if (!dir.exists(RESULT_PATH)) {
 helper.getResultPath = function (filename) {
   return (paste0(RESULT_PATH, filename))
 }
+
+# Progressbar Functions
+library("txtProgressBar")

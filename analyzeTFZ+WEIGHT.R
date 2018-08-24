@@ -5,6 +5,11 @@
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
 
+# Contents
+# . ???
+
+# Helper Functions and Path Handling
+
 RoundUp <- function(from,to){
   ceiling(from/to)*to
 } 
@@ -13,8 +18,10 @@ RoundDown <- function(from,to){
   floor(from/to)*to
 } 
 
-folder <- "./result_detail_v9/"
-staFolder <- paste0(folder, "STAs/")
+staFolder <- helper.getResultPath(STA_RESULT_FOLDER)
+helper.safeCreateFolder(staFolder)
+
+# Main
 
 files <- list.files(path = staFolder, full.names = T, pattern = ".csv$")
 fileNames <- list.files(path = staFolder, full.names = F, pattern = ".csv$")
@@ -64,5 +71,4 @@ for (j in 1:length(resultFrame$TFZ)) {
   tfzFrame <- rbind(tfzFrame, df)
 }
 
-
-write.csv2(tfzFrame, file = paste0(folder, "TFZ_Frame.csv"), row.names = F)
+write.csv2(tfzFrame, file = helper.getResultPath(TEMP_TFZ_FRAME_FILEPATH), row.names = F)

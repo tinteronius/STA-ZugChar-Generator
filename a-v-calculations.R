@@ -10,9 +10,6 @@
 
 library(XML)
 
-data <- read.csv2(file = FAHRLAGEN_FILEPATH, stringsAsFactors = F)
-finveBTS <- read.csv2(file = FINVEBTS_FILEPATH, stringsAsFactors = F)
-
 stammdatenDatei <- readLines(STAMMDATEN_FILEPATH)
 tree <- xmlTreeParse(stammdatenDatei, asText=TRUE)
 tfz <- tree[[1]][[1]][[5]][[15]]

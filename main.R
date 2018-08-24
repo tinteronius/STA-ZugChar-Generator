@@ -34,6 +34,18 @@ DO_MAPPING_STA_BTS = T
 # Execute:
 source("newA-V-MitLaufwegen.R")
 
+
 # # # # # # # # # # # # # # 
-# 2 # bottomUp_new_a(v)
+# 2 # 
 # # #
+
+# Output:
+TEMP_TFZ_FRAME_FILEPATH = "TFZ_Frame.csv"
+# Execute:
+source("analyzeTFZ+WEIGHT.R")
+
+# # # # # # # # # # # # # # 
+# 3 # bottomUp_new_a(v)
+# # #
+
+source("bottomUp_new_a(v).R")

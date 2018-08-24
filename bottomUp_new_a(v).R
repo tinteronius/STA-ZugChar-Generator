@@ -4,27 +4,32 @@
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
 
-folder <- "./result_detail_v11/"
-staFolder <- paste0(folder, "STAs/")
-
+# STA
+staFolder <- helper.getResultPath(STA_RESULT_FOLDER)
+helper.safeCreateFolder(staFolder)
 
 files <- list.files(path = staFolder, full.names = T, pattern = ".csv$")
 fileNames <- list.files(path = staFolder, full.names = F, pattern = ".csv$")
 
-staGroups <- read.csv2(file = "./2013_Fahrlagen/STAGROUPS_v06.csv", stringsAsFactors = F)
+staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsAsFactors = F)
 staGroups$PARTNER[is.na(staGroups$PARTNER)] <- ""
 
-dt <- read.csv2(file = paste0(folder, "TFZ_Frame.csv"))
+dt <- read.csv2(file = helper.getResultPath(TEMP_TFZ_FRAME_FILEPATH))
+dt$VMAX <- NULL
+dt <- unique(dt)
+dt <- dt[dt$TOTALWEIGHT >= 500,]
 
 avList <- list()
-for(j in 1:length(dt$TFZ)){
-    print(j)
+for(j in 1:nrow(dt)){
+    cat (j, "/", nrow(dt),"\n")
     elem <- tfzNames[tfzNames$name == dt$TFZ[j], ]
     avList <- c(avList, list(getAVModel(elem$i, elem$j, dt$TOTALWEIGHT[j], dt$NUM_TFZ[j], addTfzMass = T)))
+    
 }
 
 tempFrame <- data.frame()
 for(i in 1:length(files)){
+  cat (i, "/", length(files),"\n")
   tempFrame <- rbind(tempFrame, read.csv2(file = files[i], stringsAsFactors = F))
 }
 
@@ -32,19 +37,25 @@ ds <- tempFrame[!duplicated(tempFrame[,c("TFZ", "TOTALWEIGHT", "NUM_TFZ")]),c("T
 #ds <- rbind(dt, data.frame(TRACTION = c("189-2", "185-2", "185-2", "185-2", "203-1"), TOTALMASS = c(2945, 4000, 5000, 5500, 1950), DOUBLETRACTION = F, VMAX = 100, stringsAsFactors = F))
 
 avSTA <- list()
-for(j in 1:length(ds$TFZ)){
-  print(j)
+for(j in 1:nrow(ds)){
+  cat (j, "/", nrow(ds),"\n")
   elem <- tfzNames[tfzNames$name == ds$TFZ[j], ]
   avSTA <- c(avSTA, list(getAVModel(elem$i, elem$j, ds$TOTALWEIGHT[j], ds$NUM_TFZ[j], addTfzMass = F)))
 }
 
+# Prepare Paths
+sta_resultfile_prefix = paste0(helper.getResultPath(STA_RESULT_FOLDER), "STA_")
+BOTTOMUP_RESULT_FOLDER = "all90/"
+A_FRAME_RESULT_FOLDER = "a_frame/"
+helper.safeCreateFolder(helper.getResultPath(BOTTOMUP_RESULT_FOLDER))
+helper.safeCreateFolder(helper.getResultPath(A_FRAME_RESULT_FOLDER))
 
-
-for(i in 1:length(staGroups$ID)){
-    #print(staGroups$ID[i])
-    tempFrame <- read.csv2(file = paste0(staFolder, staGroups$ID[i], ".csv"), stringsAsFactors = F)
+for(i in 1:nrow(staGroups)){
+    cat (i, "/", nrow(staGroups), "|", staGroups$ID[i] ,"\n")
+  
+    tempFrame <- read.csv2(file = paste0(sta_resultfile_prefix, staGroups$ID[i], ".csv"), stringsAsFactors = F)
     if(staGroups$PARTNER[i] != ""){
-        fi <- paste0(staFolder, staGroups$ID[staGroups$PARTNER == staGroups$PARTNER[i] & staGroups$ID != staGroups$ID[i]], ".csv")
+        fi <- paste0(sta_resultfile_prefix, staGroups$ID[staGroups$PARTNER == staGroups$PARTNER[i] & staGroups$ID != staGroups$ID[i]], ".csv")
         for(f in fi){
             tempFrame <- rbind(tempFrame, read.csv2(file = f, stringsAsFactors = F))
         }
@@ -83,7 +94,7 @@ for(i in 1:length(staGroups$ID)){
     }
     names(a_frame) <- c("tr", seq(1:length(avList)))
     
-    write.csv2(t(a_frame)[-1,], file = paste0(folder, "a_frame/", staGroups$ID[i], ".csv"), row.names = T)
+    write.csv2(t(a_frame)[-1,], file = paste0(helper.getResultPath(A_FRAME_RESULT_FOLDER), staGroups$ID[i], ".csv"), row.names = T)
     
     x <- apply(a_frame, 2, sum)/length(tempFrame$X)
     x <- x[2:length(x)]
@@ -191,11 +202,13 @@ for(i in 1:length(staGroups$ID)){
     
     all90$T10 <- t10
     
-    write.csv2(all90, file = paste0(folder, "all90/", staGroups$ID[i], ".csv"), row.names = F)
+    write.csv2(all90, file = paste0(helper.getResultPath(BOTTOMUP_RESULT_FOLDER), staGroups$ID[i], ".csv"), row.names = F)
     #write.csv2(sol, file = paste0(folder, "borders_a(v)/", staGroups$ID[i], ".csv"))
 }
 
 ################ STOP HERE AND CONTINUE WITH NEXT FILE #############################################################
+
+if (F) {
 
 files <- list.files(paste0(folder, "all90/"), full.names = T, pattern = ".csv$")
 fileNames <- list.files(paste0(folder, "all90/"), full.names = F, pattern = ".csv$")
@@ -410,3 +423,5 @@ lprec
 solve(lprec)
 get.objective(lprec)
 get.variables(lprec)
+
+} # if False
