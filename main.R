@@ -52,4 +52,8 @@ source("analyzeTFZ+WEIGHT.R")
 # 3 # bottomUp_new_a(v)
 # # #
 
+TFZ_LIST_FOR_A_FRAME_FILEPATH = "TFZ_Frame_for_a_frames.csv"
+BOTTOMUP_RESULT_FOLDER = "all90/"
+A_FRAME_RESULT_FOLDER = "a_frame/"
+
 source("bottomUp_new_a(v).R")

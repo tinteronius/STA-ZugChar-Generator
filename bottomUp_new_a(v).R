@@ -26,9 +26,11 @@ for(j in 1:nrow(dt)){
     avModel = getAVModel(elem$i, elem$j, dt$TOTALWEIGHT[j], dt$NUM_TFZ[j], addTfzMass = T)
     avList <- c(avList, list(avModel))
     
-    dt$T10WithI = calculate10kmWithI(avModel, dt$VMAX[j], dt$BREAKCLASS[j], 7) 
+    dt$T10WithI[j] = calculate10kmWithI(avModel, dt$VMAX[j], dt$BREAKCLASS[j], 7)
     
 }
+
+write.csv2(dt, file = helper.getResultPath(TFZ_LIST_FOR_A_FRAME_FILEPATH), row.names = F)
 
 tempFrame <- data.frame()
 for(i in 1:length(files)){
@@ -49,14 +51,13 @@ for(j in 1:nrow(ds)){
 
 # Prepare Paths
 sta_resultfile_prefix = paste0(helper.getResultPath(STA_RESULT_FOLDER), "STA_")
-BOTTOMUP_RESULT_FOLDER = "all90/"
-A_FRAME_RESULT_FOLDER = "a_frame/"
 helper.safeCreateFolder(helper.getResultPath(BOTTOMUP_RESULT_FOLDER))
 helper.safeCreateFolder(helper.getResultPath(A_FRAME_RESULT_FOLDER))
 
 # Settting up Parallel Computing
 cl <- makeCluster(NUMBER_OF_CORES)
 registerDoParallel(cl)
+list_of_done = logical(nrow(staGroups))
 
 # Execute a_frame / T10 calculation as a parrallized loop
 res = foreach(i = 1:nrow(staGroups),
