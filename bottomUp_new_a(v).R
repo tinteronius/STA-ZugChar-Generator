@@ -54,171 +54,135 @@ A_FRAME_RESULT_FOLDER = "a_frame/"
 helper.safeCreateFolder(helper.getResultPath(BOTTOMUP_RESULT_FOLDER))
 helper.safeCreateFolder(helper.getResultPath(A_FRAME_RESULT_FOLDER))
 
-for(i in 1:nrow(staGroups)){
-    cat ("STA ", staGroups$ID[i], " (", i, "/", nrow(staGroups), ")", "\n")
+# Settting up Parallel Computing
+cl <- makeCluster(NUMBER_OF_CORES)
+registerDoParallel(cl)
+
+# Execute a_frame / T10 calculation as a parrallized loop
+res = foreach(i = 1:nrow(staGroups),
+              .export = c("getReduction", "helper.getResultPath", "calculate10kmAcceleration", 
+                          "calculate10km", "calculate10kmWithI", "getAVModel", "helper.log" ),
+              .packages = c("XML")) %dopar% {
+  msg = paste0("Started STA ", staGroups$ID[i], " (", i, "/", nrow(staGroups), ") \n")
+  helper.log(msg)
   
-    tempFrame <- read.csv2(file = paste0(sta_resultfile_prefix, staGroups$ID[i], ".csv"), stringsAsFactors = F)
-    if(staGroups$PARTNER[i] != ""){
-        fi <- paste0(sta_resultfile_prefix, staGroups$ID[staGroups$PARTNER == staGroups$PARTNER[i] & staGroups$ID != staGroups$ID[i]], ".csv")
-        for(f in fi){
-            tempFrame <- rbind(tempFrame, read.csv2(file = f, stringsAsFactors = F))
-        }
+  tempFrame <- read.csv2(file = paste0(sta_resultfile_prefix, staGroups$ID[i], ".csv"), stringsAsFactors = F)
+  if(staGroups$PARTNER[i] != ""){
+    fi <- paste0(sta_resultfile_prefix, staGroups$ID[staGroups$PARTNER == staGroups$PARTNER[i] & staGroups$ID != staGroups$ID[i]], ".csv")
+    for(f in fi){
+      tempFrame <- rbind(tempFrame, read.csv2(file = f, stringsAsFactors = F))
     }
-     
+  }
+  
+  
+  tempFrame$VMAX[is.na(tempFrame$VMAX)] <- min(tempFrame$VMAX, na.rm = T)
+  ninety <- ceiling(0.9*length(tempFrame$TRAINRUN)) 
+  lng <- length(tempFrame$X)
+  
+  v <- unique(sort(tempFrame$VMAX, decreasing = T)[ninety:lng])
+  b <- unique(sort(tempFrame$BrH, decreasing = T)[ninety:lng])
+  # 1 - class P or better, 0 - class G
+  c <- ifelse(unique(sort(tempFrame$BREAKCLASS, decreasing = T)[ninety:lng]) != "G", "P", "G")
+  
+  
+  a_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
+  
+  for(j in 1:length(avList)){
+    ind <- max(which(avList[[j]]$a >=0 & !is.na(avList[[j]]$s_kum)))
+    vmax <- min(avList[[j]]$v[ind], dt$VMAX[j])
+    ind <- which(avList[[j]]$v == vmax)
     
-    tempFrame$VMAX[is.na(tempFrame$VMAX)] <- min(tempFrame$VMAX, na.rm = T)
-    ninety <- ceiling(0.9*length(tempFrame$TRAINRUN)) 
-    lng <- length(tempFrame$X)
+    # get tolerance of a(v)
+    reduce <- getReduction(avList[[j]]$a[1], avList[[j]]$a[ind])
+    a_tol <- avList[[j]]$a - seq(0.1,1,0.009)* reduce
+    check_a <- logical(length(tempFrame$X))
     
-    v <- unique(sort(tempFrame$VMAX, decreasing = T)[ninety:lng])
-    b <- unique(sort(tempFrame$BrH, decreasing = T)[ninety:lng])
+    for(k in 1:length(tempFrame$X)){
+      p <- which(tempFrame$TFZ[k] == ds$TFZ & tempFrame$TOTALWEIGHT[k] == ds$TOTALWEIGHT & tempFrame$NUM_TFZ[k] == ds$NUM_TFZ)
+      ind_tf <- max(which(avSTA[[p]]$a >=0 & !is.na(avSTA[[p]]$s_kum)))
+      vm <- min(avSTA[[p]]$v[ind_tf], tempFrame$VMAX[k])
+      ind <- min(ind, which(avSTA[[p]]$v == vm))									  
+      check_a[k] <- sum(avSTA[[p]]$a[1:ind] >= a_tol[1:ind]) == ind
+    }
+    a_frame <- cbind(a_frame, check_a)
+  }
+  names(a_frame) <- c("tr", seq(1:length(avList)))
+  
+  write.csv2(t(a_frame)[-1,], file = paste0(helper.getResultPath(A_FRAME_RESULT_FOLDER), staGroups$ID[i], ".csv"), row.names = T)
+  
+  x <- apply(a_frame, 2, sum)/length(tempFrame$X)
+  x <- x[2:length(x)]
+  
+  a <- which(x >= 0.9)
+  if(length(a)<1){
+    print(paste(i, "no train covers at least 90% in", fileNames[i]))
+    next
+  }
+  a_frame <- a_frame[,c(1,a+1)]
+  v_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
+  for(k in v){
+    v_frame <- cbind(v_frame, tempFrame$VMAX >= k)
+  }
+  names(v_frame) <- c("tr", v)
+  
+  b_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
+  for(k in b){
+    b_frame <- cbind(b_frame, tempFrame$BrH >= k)
+  }
+  names(b_frame) <- c("tr", b)
+  
+  c_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
+  for(k in c){
     # 1 - class P or better, 0 - class G
-    c <- ifelse(unique(sort(tempFrame$BREAKCLASS, decreasing = T)[ninety:lng]) != "G", "P", "G")
+    y <- tempFrame$BREAKCLASS != "G"
+    c_frame <- cbind(c_frame, y >= (k!="G"))
+  }
+  names(c_frame) <- c("tr", c)
+  
+  # get all possible combinations
+  df <- expand.grid(a = a, b = b, c = c, v = v)
+  for(k in 1:length(df$a)){
+    df$a_res[k] <- 1.0 * sum(a_frame[,paste0(df$a[k])]) / length(tempFrame$X)
+    df$b_res[k] <- 1.0 * sum(b_frame[,paste0(df$b[k])]) / length(tempFrame$X)
+    df$c_res[k] <- 1.0 * sum(c_frame[,paste0(df$c[k])]) / length(tempFrame$X)
+    df$v_res[k] <- 1.0 * sum(v_frame[,paste0(df$v[k])]) / length(tempFrame$X)
     
+    df$total_res[k] <- 1.0 * sum(a_frame[,paste0(df$a[k])] & b_frame[,paste0(df$b[k])] & c_frame[,paste0(df$c[k])] & v_frame[,paste0(df$v[k])]) / length(tempFrame$X)
     
-    a_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
-    
-    cat(paste0("calculate a_frame | ", Sys.time(), "\n"))
-    for(j in 1:length(avList)){
-        ind <- max(which(avList[[j]]$a >=0 & !is.na(avList[[j]]$s_kum)))
-        vmax <- min(avList[[j]]$v[ind], dt$VMAX[j])
-        ind <- which(avList[[j]]$v == vmax)
-        
-        # get tolerance of a(v)
-        reduce <- getReduction(avList[[j]]$a[1], avList[[j]]$a[ind])
-        a_tol <- avList[[j]]$a - seq(0.1,1,0.009)* reduce
-        check_a <- logical(length(tempFrame$X))
-        
-        for(k in 1:length(tempFrame$X)){
-            p <- which(tempFrame$TFZ[k] == ds$TFZ & tempFrame$TOTALWEIGHT[k] == ds$TOTALWEIGHT & tempFrame$NUM_TFZ[k] == ds$NUM_TFZ)
-			ind_tf <- max(which(avSTA[[p]]$a >=0 & !is.na(avSTA[[p]]$s_kum)))
-            vm <- min(avSTA[[p]]$v[ind_tf], tempFrame$VMAX[k])
-            ind <- min(ind, which(avSTA[[p]]$v == vm))									  
-            check_a[k] <- sum(avSTA[[p]]$a[1:ind] >= a_tol[1:ind]) == ind
-        }
-        a_frame <- cbind(a_frame, check_a)
-    }
-    names(a_frame) <- c("tr", seq(1:length(avList)))
-    
-    write.csv2(t(a_frame)[-1,], file = paste0(helper.getResultPath(A_FRAME_RESULT_FOLDER), staGroups$ID[i], ".csv"), row.names = T)
-    
-    x <- apply(a_frame, 2, sum)/length(tempFrame$X)
-    x <- x[2:length(x)]
-    
-    a <- which(x >= 0.9)
-    if(length(a)<1){
-        print(paste(i, "no train covers at least 90% in", fileNames[i]))
-        next
-    }
-    a_frame <- a_frame[,c(1,a+1)]
-    v_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
-    for(k in v){
-        v_frame <- cbind(v_frame, tempFrame$VMAX >= k)
-    }
-    names(v_frame) <- c("tr", v)
-    
-    b_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
-    for(k in b){
-        b_frame <- cbind(b_frame, tempFrame$BrH >= k)
-    }
-    names(b_frame) <- c("tr", b)
-    
-    c_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
-    for(k in c){
-        # 1 - class P or better, 0 - class G
-        y <- tempFrame$BREAKCLASS != "G"
-        c_frame <- cbind(c_frame, y >= (k!="G"))
-    }
-    names(c_frame) <- c("tr", c)
-        
-    # get all possible combinations
-    df <- expand.grid(a = a, b = b, c = c, v = v)
-    for(k in 1:length(df$a)){
-        df$a_res[k] <- 1.0 * sum(a_frame[,paste0(df$a[k])]) / length(tempFrame$X)
-        df$b_res[k] <- 1.0 * sum(b_frame[,paste0(df$b[k])]) / length(tempFrame$X)
-        df$c_res[k] <- 1.0 * sum(c_frame[,paste0(df$c[k])]) / length(tempFrame$X)
-        df$v_res[k] <- 1.0 * sum(v_frame[,paste0(df$v[k])]) / length(tempFrame$X)
-        
-        df$total_res[k] <- 1.0 * sum(a_frame[,paste0(df$a[k])] & b_frame[,paste0(df$b[k])] & c_frame[,paste0(df$c[k])] & v_frame[,paste0(df$v[k])]) / length(tempFrame$X)
-        
-    }
-    
-    df <- df[df$total_res >= 0.9,]
-    all90 <- cbind(df, dt[df$a,])
-	  # Rückfrage! (auskommentiert?)
-    df <- df[order(df$a_res, df$v_res, df$b_res, df$c_res),]
-    
-    # find not domiated solutinos only
-    # print(paste0(timestamp(),staGroups$ID[i], ": get non dominated set"))
-    # dominating <- integer(0)
-    # dominated <- integer(0)
-    # if(length(df$v)>1){
-    #     dominating <- c(dominating, 1)
-    #     for(j in 2:(length(df$v))){
-    #         #print(j)
-    #         for(k in 1:length(dominating)){
-    #             test <- (df[j,c("a_res","b_res","c_res","v_res")] - df[dominating[k],c("a_res","b_res","c_res","v_res")])
-    #             if(sum(test >=0)==4){
-    #                 # j is dominated by k --> skip j and continue with next row j+1
-    #                 break()
-    #             }else if(sum(test <=0)==4){
-    #                 # row j dominates k --> remove k from set, add j to set and continue with next row j+1
-    #                 dominating <- c(dominating, j)
-    #                 dominating <- dominating[dominating != dominating[k]]
-    #                 break()
-    #             }
-    #             if(k == length(dominating)){
-    #                 # row j was never dominated and never dominated an existing train --> add to set
-    #                 dominating <- c(dominating, j)
-    #             }
-    #         }
-    #     }
-    # }
-    #     
-    # sol <- df[dominating,]
-    # sol$select_av <- 0
-    # sol$select_all <- 0
-    # sol$select_t10 <- 0
-    # sol$select_av[which.min(abs(0.9 - sol$a_res) + abs(0.9 - sol$v_res))[1]] <- 1
-    # sol$select_all[which.min(abs(0.9 - sol$a_res) + abs(0.9 - sol$v_res) + abs(0.9 - sol$b_res) + abs(0.9 - sol$c_res))[1]] <- 1
-    # 
-    # sol <- cbind(sol, dt[sol$a,])
-    
-    cat(paste0("calculate T10 | ", Sys.time(), "\n"))
-    # t10 <- integer(0)
-    # for(n in 1:length(sol$a)){
-    #     elem <- tfzNames[tfzNames$name == sol$TFZ[n], ]
-    #     avModel <- getAVModel(i = elem$i, j = elem$j, m = sol$TOTALWEIGHT[n], anzTfz = sol$NUM_TFZ[n], addTfzMass = T)
-    #     vm <- min(sol$v[n], sol$VMAX[n])
-    #     t10 <- c(t10, calculate10km(avModel = avModel,vmax = vm, breakclass = sol$c[n]))
-    # }
-    # sol$T10 <- t10
-    # sol$select_t10[which.min(t10)[1]] <- 1
-    # v90 <- 10* floor(sol$v[sol$select_t10 == 1] / 10.0)
-    # 
-    # all90 <- all90[all90$v >= (v90 - 10) & all90$v <= (v90 + 10),]
-    
-    t10 <- integer(0)
-    for(n in 1:length(all90$a)){
-        elem <- tfzNames[tfzNames$name == all90$TFZ[n], ]
-        avModel <- getAVModel(i = elem$i, j = elem$j, m = all90$TOTALWEIGHT[n], anzTfz = all90$NUM_TFZ[n], addTfzMass = T)
-        t10_avg <- 0.5 * calculate10km(avModel, all90$v[n], all90$c[n]) + 
-                   0.4 * calculate10kmWithI(avModel, all90$v[n], all90$c[n], 7) + 
-                   0.1 * calculate10kmAcceleration(avModel, 7)
-        t10 <- c(t10, t10_avg)				  
-    }
-    
-    all90$T10 <- t10
-    
-	  if(sum(t10 < 20000) <=0){
-      s <- sort(unique(t10))[20]
-      all90 <- all90[t10 <= s,]
-    }else{
-      all90 <- all90[t10 < 20000,]
-    }			
-    write.csv2(all90, file = paste0(helper.getResultPath(BOTTOMUP_RESULT_FOLDER), staGroups$ID[i], ".csv"), row.names = F)
-    #write.csv2(sol, file = paste0(folder, "borders_a(v)/", staGroups$ID[i], ".csv"))
+  }
+  
+  df <- df[df$total_res >= 0.9,]
+  all90 <- cbind(df, dt[df$a,])
+  # Rückfrage! (auskommentiert?)
+  df <- df[order(df$a_res, df$v_res, df$b_res, df$c_res),]
+  
+  t10 <- integer(0)
+  for(n in 1:length(all90$a)){
+    elem <- tfzNames[tfzNames$name == all90$TFZ[n], ]
+    avModel <- getAVModel(i = elem$i, j = elem$j, m = all90$TOTALWEIGHT[n], anzTfz = all90$NUM_TFZ[n], addTfzMass = T)
+    t10_avg <- 0.5 * calculate10km(avModel, all90$v[n], all90$c[n]) + 
+      0.4 * calculate10kmWithI(avModel, all90$v[n], all90$c[n], 7) + 
+      0.1 * calculate10kmAcceleration(avModel, 7)
+    t10 <- c(t10, t10_avg)				  
+  }
+  
+  all90$T10 <- t10
+  
+  if(sum(t10 < 20000) <=0){
+    s <- sort(unique(t10))[20]
+    all90 <- all90[t10 <= s,]
+  }else{
+    all90 <- all90[t10 < 20000,]
+  }			
+  write.csv2(all90, file = paste0(helper.getResultPath(BOTTOMUP_RESULT_FOLDER), staGroups$ID[i], ".csv"), row.names = F)
+  
+  list_of_done[i] = T
+  msg = paste0("Finished STA ", staGroups$ID[i], " (", i, "/", nrow(staGroups), ") \n")
+  helper.log(msg)
+  
 }
+stopCluster(cl) # shut down the cluster
+which(list_of_done)
 
 ################ STOP HERE AND CONTINUE WITH NEXT FILE #############################################################
 
