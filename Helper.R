@@ -1,6 +1,14 @@
-helper.included = T
 # Contents
 # . Helper Functions for File Handling
+# . Helepr Functions for 
+
+# install all needed packages if not installed
+helper.neededPackages = c("parallel", "doParallel", "foreach")
+helper.updatePackages = function() {
+  needed_packages = helper.neededPackages
+  new_packages = needed_packages[!(needed_packages %in% installed.packages()[,"Package"])]
+  if (length(new_packages) > 0) install.packages(new_packages)
+}
 
 # create Folder if not existing
 helper.safeCreateFolder = function (path) {
@@ -20,4 +28,18 @@ helper.getResultPath = function (filename) {
 }
 
 # Progressbar Functions
-library("txtProgressBar")
+#helper.log_socket = helper.getResultPath("log.txt")
+helper.log = function(msg) {
+  print_message = sprintf(paste0(as.character(Sys.time()), ": ", msg, "\n"))
+  cat (print_message)
+  
+}
+
+# if everything works
+helper.updatePackages()
+library("parallel")
+library("doParallel")
+library("foreach")
+
+
+helper.included = T

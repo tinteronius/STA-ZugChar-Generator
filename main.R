@@ -10,6 +10,10 @@ STAMMDATEN_FILEPATH = "2013-Stammdaten_ST-STTriebfahrzeugbaureihen121-komplett.x
 FAHRLAGEN_FILEPATH = "./2013_Fahrlagen/Fahrlagen_14.11.2013_final_v07_STAFIT.csv"
 FINVEBTS_FILEPATH = "./2013_Fahrlagen/FinVeBTS.csv"
 
+# Configuration for parallel computing
+
+NUMBER_OF_CORES = 3 # Note: It is strongly recommended to keep at least one core unccupied, since RStudio and OS
+
 # Check if everything works by including the heart script:
 
 source("Helper.R")
