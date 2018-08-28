@@ -166,26 +166,63 @@ res = foreach(i = 1:nrow(staGroups),
                 df <- df[df$total_res >= 0.9,]
                 all90 <- cbind(df, dt[df$a,])
                 
-                t10 <- integer(0)
-                for(n in 1:length(all90$a)){
-                  elem <- tfzNames[tfzNames$name == all90$TFZ[n], ]
-                  avModel <- getAVModel(i = elem$i, j = elem$j, m = all90$TOTALWEIGHT[n], anzTfz = all90$NUM_TFZ[n], addTfzMass = T)
-                  t10_avg <- 0.5 * calculate10km(avModel, all90$v[n], all90$c[n]) + 
-                    0.4 * calculate10kmWithI(avModel, all90$v[n], all90$c[n], 7) + 
-                    0.1 * calculate10kmAcceleration(avModel, 7)
-                  t10 <- c(t10, t10_avg)				  
+                # Caching is done by intelligent sorting of calculation parameters
+                # -> calculation can be skipped if values do not change
+                num = nrow(all90)
+                tfz_ij = tfzNames[match(all90$TFZ, tfzNames$name, nomatch = NA), ]
+                anfragen = data.frame(a = all90$a, i = tfz_ij$i, j = tfz_ij$j, m = all90$TOTALWEIGHT, anzTfz = all90$NUM_TFZ, v = all90$v, c = all90$c) #, addTfzMass = T)
+                order_index = order(anfragen$i, anfragen$j, anfragen$m, anfragen$anzTfz)
+                anfragen <- anfragen[order_index,]
+                
+                # Init Cache
+                last_avRequest = 1:4
+                last_fullRequest = 1:6
+                av_skip_counter = 0 # Counters For Debugging
+                t10_skip_counter = 0 # Counters For Debugging
+                
+                t10 <- integer(num)
+                for(n in 1:num){
+                  
+                  avRequest = anfragen[n,2:5]
+                  fullRequest = anfragen[n, 2:7]
+                  
+                  # check if new avModel is needed
+                  if (any(avRequest != last_avRequest)){
+                    avModel <- getAVModel(i = avRequest$i, j = avRequest$j, m = avRequest$m, anzTfz = avRequest$anzTfz, addTfzMass = T)
+                    T10kmAccel = calculate10kmAcceleration(avModel, 7)
+                    last_avRequest <- avRequest
+                  } else {
+                    # Count For Debugging
+                    av_skip_counter = av_skip_counter + 1
+                  }
+                  
+                  # check if new T10 values are needed when VMAX or BrH 
+                  if (any(fullRequest != last_fullRequest)) {
+                    T10kmWithI = calculate10kmWithI(avModel, fullRequest$v, fullRequest$c, 7)
+                    T10km = calculate10km(avModel, fullRequest$v, fullRequest$c)
+                    last_fullRequest <- fullRequest
+                  } else {
+                    # Count For Debugging
+                    t10_skip_counter = t10_skip_counter + 1
+                  }
+                  
+                  # T10 - final calculation
+                  t10_avg <- 0.5 * T10km  + 
+                    0.4 * T10kmWithI + 
+                    0.1 * T10kmAccel
+                  
+                  t10[n] <- t10_avg			  
                 }
-                
-                all90$T10 <- t10
-                debug.all90step2.alt <- all90
-                
-                # Filter Trains with weak loco
-                if(sum(t10 < 20000) <=0){
+                # Re-order the Values to match the order of all90 data.frame
+                reorder_index = order(order_index)
+                all90$T10 <- t10[reorder_index]
+
+                if(sum(t10 < 20000) <= 0){
                   s <- sort(unique(t10))[20]
-                  all90 <- all90[t10 <= s,]
+                  all90 <- all90[all90$T10 <= s,]
                 }else{
-                  all90 <- all90[t10 < 20000,]
-                }		
+                  all90 <- all90[all90$T10 < 20000,]
+                }			
           
                 write.csv2(all90, file = paste0(helper.getResultPath(BOTTOMUP_RESULT_FOLDER), staGroups$ID[i], ".csv"), row.names = F)
                 
