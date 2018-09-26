@@ -17,7 +17,6 @@ NUMBER_OF_CORES = 3 # Note: It is strongly recommended to keep at least one core
 # Check if everything works by including the heart script:
 
 source("Helper.R")
-source("a-v-calculations.R")
 
 # # # # # # # # # # # # # # 
 # 1 # Mapping Fahrlagen -> STA
