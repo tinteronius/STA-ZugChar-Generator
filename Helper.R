@@ -35,6 +35,13 @@ helper.log = function(msg) {
   
 }
 
+# Check if File Exists, Raise Error if not (error_message = additional error message, if file not found)
+helper.requireFile = function (path, error_message = "") {
+  if (! file.exists(path)) {
+    stop(paste0(path, " not found ! - Please set working directory. ", error_message))
+  }
+}
+
 # if everything works
 helper.updatePackages()
 library("parallel")

@@ -54,10 +54,10 @@ write.csv2(sta, file = helper.getResultPath(BTS2STA_FILEPATH), row.names = F)
 # # # # # # # # # # # # # # 
 # DEBUGGING?
 
-for(w in finveBTS$FinVe.BTS){
-    if(w %in% sta$BTS){next()}
-    print(w)
-}
+#for(w in finveBTS$FinVe.BTS){
+#    if(w %in% sta$BTS){next()}
+#    print(w)
+#}
 
 
 # # # # # # # # # # # # # # 
@@ -172,7 +172,7 @@ for(i in 1000:1015){
 write.csv2(staGroups, file = helper.getResultPath(STAGROUPS_FILEPATH), row.names = F)
 
 } else { # Checking Block if Overlapping enabled
-  
+  helper.requireFile(helper.getResultPath(STAGROUPS_FILEPATH), "Try Copy from Input Folder.")
   staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsAsFactors = F)  
 
 }
