@@ -2,7 +2,7 @@
 # ! # Change Working directory: Session > Set Working Directory > To Source File Location
 # # #
 
-RESULT_VERSION = '100'
+RESULT_VERSION = '200'
 
 # Configuration Of *relative* paths
 
@@ -23,11 +23,13 @@ source("Helper.R")
 # # #
 
 # Input:
+#STA_FOLDER = "../ZugChar_Untersuchungen/STAs_/"
 STA_FOLDER = "./2013_Fahrlagen/ERIKA_STA"
 # Output:
 FAHRLAGEN_STAFIT_FILEPATH = "Fahrlagen_14.11.2013_final_v07_STAFIT.csv"
 BTS2STA_FILEPATH = "bts2sta.csv"
-STAGROUPS_FILEPATH = "STAGROUPS_v06.csv"
+STAGROUPS_FILEPATH = "STA_GROUPS_tweaked200.csv"
+#STAGROUPS_FILEPATH = "STAGROUPS_v06.csv"
 STA_RESULT_FOLDER = "STAs/"
 # Options:
 DO_OVERLAPPING = F # overlapping currently bugged
