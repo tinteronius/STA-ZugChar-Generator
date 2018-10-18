@@ -1,0 +1,8 @@
+RIL100 ; DurchfahrtFahrweg ; AnkunftFahrweg ; AbfahrtFahrweg
+RAPK;RRA-RKL;;
+R901O;RAP-RKL;;
+R902O;RAP-RKL;;
+RLT;RAP-RKL;;
+RKOR;RAP-N302-RKL;;
+RKL;RAP-104/4-SNCF;;
+RXKL;RKL-SNCF G;;
