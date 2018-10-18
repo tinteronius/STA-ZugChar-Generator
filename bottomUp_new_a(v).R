@@ -15,7 +15,9 @@ staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsA
 staGroups$PARTNER[is.na(staGroups$PARTNER)] <- ""
 
 dt <- read.csv2(file = helper.getResultPath(TEMP_TFZ_FRAME_FILEPATH))
-dt <- dt[!duplicated(dt[, c("TOTALWEIGHT", "BREAKCLASS", "TFZ", "NUM_TFZ")]),]
+dt$VMAX <- NULL
+dt <- unique(dt)
+#dt <- dt[!duplicated(dt[, c("TOTALWEIGHT", "BREAKCLASS", "TFZ", "NUM_TFZ")]),]
 dt <- dt[dt$TOTALWEIGHT >= 500,]
 
 dt$T10WithI <- NULL
@@ -26,7 +28,7 @@ for(j in 1:nrow(dt)){
     avModel = getAVModel(elem$i, elem$j, dt$TOTALWEIGHT[j], dt$NUM_TFZ[j], addTfzMass = T)
     avList <- c(avList, list(avModel))
     
-    dt$T10WithI[j] = calculate10kmWithI(avModel, dt$VMAX[j], dt$BREAKCLASS[j], 7)
+    #dt$T10WithI[j] = calculate10kmWithI(avModel, dt$VMAX[j], dt$BREAKCLASS[j], 7)
     
 }
 
@@ -58,8 +60,6 @@ helper.safeCreateFolder(helper.getResultPath(A_FRAME_RESULT_FOLDER))
 cl <- makeCluster(NUMBER_OF_CORES)
 registerDoParallel(cl)
 list_of_done = logical(nrow(staGroups))
-
-cbind(1:nrow(staGroups), staGroups$ID)[1:20,]
 
 # Execute a_frame / T10 calculation as a parrallized loop
 res = foreach(i = 1:nrow(staGroups),
