@@ -94,22 +94,20 @@ res = foreach(i = 1:nrow(staGroups),
                 # Result is the "a_frame"
                 
                 a_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
-                
+
                 for(j in 1:length(avList)){
                   ind <- max(which(avList[[j]]$a >=0 & !is.na(avList[[j]]$s_kum)))
-                  vmax <- min(avList[[j]]$v[ind], dt$VMAX[j])
-                  ind <- which(avList[[j]]$v == vmax)
-                  
+
                   # get tolerance of a(v)
                   reduce <- getReduction(avList[[j]]$a[1], avList[[j]]$a[ind])
                   a_tol <- avList[[j]]$a - seq(0.1,1,0.009)* reduce
                   check_a <- logical(length(tempFrame$X))
-                  
+
                   for(k in 1:length(tempFrame$X)){
                     p <- which(tempFrame$TFZ[k] == ds$TFZ & tempFrame$TOTALWEIGHT[k] == ds$TOTALWEIGHT & tempFrame$NUM_TFZ[k] == ds$NUM_TFZ)
                     ind_tf <- max(which(avSTA[[p]]$a >=0 & !is.na(avSTA[[p]]$s_kum)))
                     vm <- min(avSTA[[p]]$v[ind_tf], tempFrame$VMAX[k])
-                    ind <- min(ind, which(avSTA[[p]]$v == vm))									  
+                    ind <- min(ind, which(avSTA[[p]]$v == vm))
                     check_a[k] <- sum(avSTA[[p]]$a[1:ind] >= a_tol[1:ind]) == ind
                   }
                   a_frame <- cbind(a_frame, check_a)
