@@ -12,9 +12,15 @@ helper.updatePackages = function() {
 
 # create Folder if not existing
 helper.safeCreateFolder = function (path) {
-  if (!dir.exists(path)) {
-    dir.create(path)
+  path_points = unlist(strsplit(path, "[/]"))
+  current_path = ''
+  for (pp in path_points) {
+    current_path = paste0(current_path, pp, "/")
+    if (!dir.exists(current_path)) {
+      dir.create(current_path)
+    }  
   }
+  
 }
 
 # Create result directory if necessary
