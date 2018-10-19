@@ -2,12 +2,12 @@
 # ! # Change Working directory: Session > Set Working Directory > To Source File Location
 # # #
 
-RESULT_VERSION = '200'
+RESULT_VERSION = '112'
 
 # Configuration Of *relative* paths
 
 STAMMDATEN_FILEPATH = "2013-Stammdaten_ST-STTriebfahrzeugbaureihen121-komplett.xml"
-FAHRLAGEN_FILEPATH = "./2013_Fahrlagen/Fahrlagen_14.11.2013_final_v07_STAFIT.csv"
+FAHRLAGEN_FILEPATH = "./2013_Fahrlagen/Fahrlagen_14.11.2013_final_v11.csv"
 FINVEBTS_FILEPATH = "./2013_Fahrlagen/FinVeBTS.csv"
 
 # Configuration for parallel computing
@@ -24,12 +24,12 @@ source("Helper.R")
 
 # Input:
 #STA_FOLDER = "../ZugChar_Untersuchungen/STAs_/"
-STA_FOLDER = "./2013_Fahrlagen/ERIKA_STA"
+STA_FOLDER = "./2013_Fahrlagen/STA-Laufwege_geteiltMANUELL/"
 # Output:
-FAHRLAGEN_STAFIT_FILEPATH = "Fahrlagen_14.11.2013_final_v07_STAFIT.csv"
+FAHRLAGEN_STAFIT_FILEPATH = "Fahrlagen_14.11.2013_final_v12_STAFIT.csv"
 BTS2STA_FILEPATH = "bts2sta.csv"
-STAGROUPS_FILEPATH = "STA_GROUPS_tweaked200.csv"
-#STAGROUPS_FILEPATH = "STAGROUPS_v06.csv"
+#STAGROUPS_FILEPATH = "STA_GROUPS_tweaked200.csv"
+STAGROUPS_FILEPATH = "STAGROUPS_v06.csv"
 STA_RESULT_FOLDER = "STAs/"
 # Options:
 DO_OVERLAPPING = F # overlapping currently bugged
@@ -65,6 +65,7 @@ source("bottomUp_new_a(v).R")
 
 BOTTOMUP_REDUCED_RESULT_FOLDER = "all90/reduced/"
 COVERING_RESULT_FOLDER = "bottomup/merge_av/"
+SELECTION_RESULT_FOLDER = "SelectedFiles_Opti_v01.csv"
 
 source("setCoveringOptimizer.R")
 
@@ -75,5 +76,20 @@ source("setCoveringOptimizer.R")
 # coming soon
 
 # # # # # # # # # # # # # # 
-# 5 # 
+# 5 # GainMaximizer.R
 # # #
+OPTIMIZATION_RESULT_FOLDER = "bottomup/merge_a(v)_v12/optimizedTrains/"
+source("GainMaximizer.R")
+
+# # # # # # # # # # # # # # 
+# 6 # SystemtrassenAssigner.R
+# # #
+
+source("SystemtrassenAssigner.R")
+
+# # # # # # # # # # # # # # 
+# 7 # Tagesgang.R
+# # #
+
+CHOSEN_REM = "13" # String!
+source("Tagesgang.R")

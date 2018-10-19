@@ -7,14 +7,16 @@ source("T10kmCalculator.R")
 
 library(ggplot2)
 
-staGroups <- read.csv2(file = "./2013_Fahrlagen/STAGROUPS_v06.csv", stringsAsFactors = F)
+staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsAsFactors = F)
 grp <- sort(unique(staGroups$GROUP))
 
-sta <- read.csv2(file= "./2013_Fahrlagen/180214_STA.csv", stringsAsFactors = F)
+sta <- read.csv2(file= helper.getResultPath(FAHRLAGEN_STAFIT_FILEPATH), stringsAsFactors = F)
 
+optimization_result_prefix = "REM_"
+working_folder = helper.getResultPath(paste0(OPTIMIZATION_RESULT_FOLDER, optimization_result_prefix, "/sta/"))
 
-staFiles <- list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/sta/", full.names = T, pattern = ".csv$")
-staNames <- gsub(".csv", "", list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/sta/", full.names = F, pattern = ".csv$"))
+staFiles <- list.files(path = working_folder, full.names = T, pattern = ".csv$")
+staNames <- gsub(".csv", "", list.files(path = working_folder, full.names = F, pattern = ".csv$"))
 
 wayPoints <- strsplit(data$WAY, "#")
 timePoints <- strsplit(data$DEP, "#")
@@ -80,14 +82,17 @@ for(i in 1:length(staFiles)){
                                            DIRECTION = direction, RELATION = relation,
                                            stringsAsFactors = F))
     }
-    write.csv2(result, file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/", staNames[i], ".csv"), row.names = F)
+    helper.safeCreateFolder(paste0(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER), optimization_result_prefix, CHOSEN_REM, "/tagesgang/"))
+    write.csv2(result, file = paste0(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER), optimization_result_prefix, CHOSEN_REM, "/tagesgang/", staNames[i], ".csv"), row.names = F)
 }
 
 
-staFiles <- list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/", full.names = T, pattern = ".csv$")
-staNames <- gsub(".csv", "", list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/", full.names = F, pattern = ".csv$"))
+staFiles <- list.files(path = paste0(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER), optimization_result_prefix, CHOSEN_REM, "/tagesgang/"), full.names = T, pattern = ".csv$")
+staNames <- gsub(".csv", "", list.files(path = paste0(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER), optimization_result_prefix, CHOSEN_REM, "/tagesgang/"), full.names = F, pattern = ".csv$"))
 
-sta <- read.csv2(file= "./2013_Fahrlagen/180214_STA.csv", stringsAsFactors = F)
+if (F) {
+
+sta <- read.csv2(file= helper.getResultPath(FAHRLAGEN_STAFIT_FILEPATH), stringsAsFactors = F)
 
 
 for(i in 1:length(staFiles)){
@@ -295,4 +300,5 @@ for(i in 1:length(files)){
     e <- qplot(x = tempFrame$TIMESLOT30, fill = tempFrame$SYS_ID) + ggtitle(fileNames[i]) + 
         theme_minimal() + scale_fill_brewer(palette="Set1") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
     ggsave(filename=paste0("./bottomup/merge_a(v)_v2/tagesgang/plot30/", fileNames[i], "_30.png"), plot=e, width = 19, height = 9)
+}
 }

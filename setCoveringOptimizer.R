@@ -6,6 +6,7 @@ library(lpSolveAPI)
 library(ggplot2)
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
+source("Helper.R")
 
 
 optimizeTrains <- function(fileNames, z, t10, a_frame, num_trains){
@@ -26,7 +27,8 @@ optimizeTrains <- function(fileNames, z, t10, a_frame, num_trains){
     add.constraint(lprec, rep(1, length(z)), "=", num_trains)
     lp.control(lprec, sense='max')
     
-    write.lp(lprec, paste0("./bottomup/merge_a(v)_v12/mip_", num_trains,".lp"), type = "lp", use.names = c(TRUE, TRUE))
+    # DEBUGGING FUNCTION
+    #write.lp(lprec, paste0("./bottomup/merge_a(v)_v12/mip_", num_trains,".lp"), type = "lp", use.names = c(TRUE, TRUE))
     
     solve(lprec)
     
@@ -38,16 +40,25 @@ optimizeTrains <- function(fileNames, z, t10, a_frame, num_trains){
 
 #################################### OPTIMIZE 90% ###########################################################################
 
-files <- list.files(path = "./result_detail_v11/all90/", full.names = T, pattern = ".csv$")
-fileNames <- list.files(path = "./result_detail_v11/all90/", full.names = F, pattern = ".csv$")
+# Init Result Folder and Input File Lists
+helper.safeCreateFolder(helper.getResultPath(BOTTOMUP_RESULT_FOLDER))
+helper.safeCreateFolder(helper.getResultPath(BOTTOMUP_REDUCED_RESULT_FOLDER))
+helper.safeCreateFolder(helper.getResultPath(COVERING_RESULT_FOLDER))
 
+files <- list.files(path = helper.getResultPath(BOTTOMUP_RESULT_FOLDER), full.names = T, pattern = ".csv$")
+fileNames <- list.files(path = helper.getResultPath(BOTTOMUP_RESULT_FOLDER), full.names = F, pattern = ".csv$")
+
+allselection_result_prefix = "AllSelections_OPTI_" 
+modeltrains_result_prefix = "ModelTrains_OPTI_"
+
+# Init Reduced Input Files
 tempFrame <- data.frame()
 for(i in 1:length(files)){
     print(fileNames[i])
     tFrame <- read.csv2(file = files[i], stringsAsFactors = F)
     val <- min(tFrame$T10)
     tFrame <- tFrame[tFrame$T10 <= 1.05*val,]
-    write.csv2(tFrame, file= paste0("./result_detail_v11/all90/reduced/", fileNames[i]), row.names = F)
+    write.csv2(tFrame, file= paste0(helper.getResultPath(BOTTOMUP_REDUCED_RESULT_FOLDER), fileNames[i]), row.names = F)
     tempFrame <- rbind(tempFrame, tFrame)
 }
 
@@ -111,8 +122,8 @@ for(j in 1:length(calc)){
         
     }
     calc[[j]]$sum_t10 <- total_t10
-    write.csv2(completeFrame, file = paste0("./bottomup/merge_a(v)_v12/AllSelections_OPTI_", calc[[j]]$num_trains,".csv"), row.names = F)
-    write.csv2(calc[[j]]$opt_z, file = paste0("./bottomup/merge_a(v)_v12/ModelTrains_OPTI_", calc[[j]]$num_trains, ".csv"), row.names = F)
+    write.csv2(completeFrame, file = paste0(helper.getResultPath(COVERING_RESULT_FOLDER), allselection_result_prefix, calc[[j]]$num_trains,".csv"), row.names = F)
+    write.csv2(calc[[j]]$opt_z, file = paste0(helper.getResultPath(COVERING_RESULT_FOLDER), modeltrains_result_prefix, calc[[j]]$num_trains, ".csv"), row.names = F)
 }
 index_j <- seq(length(calc)-1)
 n_tr <- integer(0)
@@ -121,17 +132,21 @@ n_sel <- integer(0)
 for(j in 1:(length(calc)-1)){
     n_tr <- c(n_tr, calc[[j]]$num_trains)
     sum_t10 <- c(sum_t10, calc[[j]]$sum_t10)
-    x <- read.csv2(file = paste0("./bottomup/merge_a(v)_v12/AllSelections_OPTI_", calc[[j]]$num_trains,".csv"), stringsAsFactors = F)
+    x <- read.csv2(file = paste0(helper.getResultPath(COVERING_RESULT_FOLDER), allselection_result_prefix, calc[[j]]$num_trains,".csv"), stringsAsFactors = F)
     n_sel <- c(n_sel, length(unique(paste0(x$tfz, x$totalmass, x$num_tfz, x$vmax, x$breakclass))))
 }
 
 e <- qplot(x = n_tr, y = sum_t10, color = n_sel) + theme_bw() + 
     geom_hline(yintercept = 86755.9, color = "blue") + 
     xlim(0, 500) + scale_colour_gradientn(colours = heat.colors(10))
-ggsave("./bottomup/merge_a(v)_v12/T10sum.png", e)
+ggsave(paste0(helper.getResultPath(COVERING_RESULT_FOLDER), "T10sum.png"), e)
 
 f <- qplot(x = n_sel, y = sum_t10) + theme_bw()
-ggsave("./bottomup/merge_a(v)_v12/T10sum-n_sel.png", f)
+ggsave(paste0(helper.getResultPath(COVERING_RESULT_FOLDER), "T10sum-n_sel.png"), f)
+
+
+# Manual Code
+if (F) {
 
 # auswahl bestes Ergebnis je n_sel von 7...29 versch Charakterisitken
 
@@ -142,13 +157,9 @@ for(i in 1:length(num_sel)){
     if(num_sel[i] > 29){next()}
     j <- which.min(sum_t10[n_sel == num_sel[i]])[1]
     j <- index_j[n_sel == num_sel[i]][j]
-    selected_files <- c(selected_files, paste0("./bottomup/merge_a(v)_v12/AllSelections_OPTI_", calc[[j]]$num_trains,".csv"))
+    selected_files <- c(selected_files, paste0(helper.getResultPath(COVERING_RESULT_FOLDER), allselection_result_prefix, calc[[j]]$num_trains,".csv"))
 }
 
-write.csv2(selected_files, file = paste0("./bottomup/merge_a(v)_v12/SelectedFiles_Opti_v01.csv"), row.names = F)
+write.csv2(selected_files, file = paste0(helper.getResultPath(COVERING_RESULT_FOLDER), SELECTION_RESULT_FOLDER), row.names = F)
 
-
-
-
-
-
+}

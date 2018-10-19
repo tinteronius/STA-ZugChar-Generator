@@ -7,11 +7,11 @@ source("T10kmCalculator.R")
 library(plyr)
 
 # all STAs
-files <- list.files(path = "./result_detail_v11/STAs", full.names = T, pattern = ".csv$")
-fileNames <- list.files(path = "./result_detail_v11/STAs", full.names = F, pattern = ".csv$")
+files <- list.files(path = helper.getResultPath(STA_RESULT_FOLDER), full.names = T, pattern = ".csv$")
+fileNames <- list.files(path =  helper.getResultPath(STA_RESULT_FOLDER), full.names = F, pattern = ".csv$")
 
 # all different combinations of systemtrassen
-sys <- list.files("./bottomup/merge_a(v)_v12/optimizedTrains", full.names = T)
+sys <- list.files(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER), full.names = T)
 
 # all available systemtrassen
 #systemtrassen <- read.csv2(file = "./bottomup/merge_a(v)_v2/Complete2013_v05.csv", stringsAsFactors = F)
@@ -134,18 +134,17 @@ for(k in 1:length(sys)){
         # selection NA -->???
         if(is.na(selection)){
             print(paste(sta, "no selection of systemtrassen possible"))
-            setwd("/home/daniel/Dokumente/sta")
             
             source("a-v-calculations.R")
             source("T10kmCalculator.R")
             library(plyr)
             
             # all STAs
-            files <- list.files(path = "./result_detail_v11/STAs", full.names = T, pattern = ".csv$")
-            fileNames <- list.files(path = "./result_detail_v11/STAs", full.names = F, pattern = ".csv$")
+            files <- list.files(path = helper.getResultPath(STA_RESULT_FOLDER), full.names = T, pattern = ".csv$")
+            fileNames <- list.files(path = helper.getResultPath(STA_RESULT_FOLDER), full.names = F, pattern = ".csv$")
             
             # all different combinations of systemtrassen
-            sys <- list.files("./bottomup/merge_a(v)_v12/optimizedTrains", full.names = T)
+            sys <- list.files(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER), full.names = T)
             
             # all available systemtrassen
             #systemtrassen <- read.csv2(file = "./bottomup/merge_a(v)_v2/Complete2013_v05.csv", stringsAsFactors = F)
@@ -333,6 +332,7 @@ for(k in 1:length(sys)){
                 }
                 trains$NAME[able[, selection$ID[1]]==1] <- paste0("G", selection$ID[1])
                 
+                helper.safeCreateFolder(sys[k], "/sta/")
                 write.csv2(trains, file = paste0(sys[k], "/sta/", sta, ".csv"), row.names = F)
                 
               }
@@ -343,7 +343,7 @@ for(k in 1:length(sys)){
     }
 }
             
-            
+if (F) {
             ######################## statistics ################################
             
             # all different combinations of systemtrassen
@@ -915,3 +915,4 @@ write.csv2(statFrame, file="./bottomup/merge_paul/Statistics_v02.csv", row.names
 
 library(ggplot2)
 qplot(x = statFrame$NUM_TRAINS, y = statFrame$SUM_T10_SYS/statFrame$SUM_T10_TRAINS)
+}

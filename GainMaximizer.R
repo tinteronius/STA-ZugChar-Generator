@@ -42,9 +42,10 @@ getFitVector <- function(allSTAs, train, avModel,  completeTrains, complete_avLi
     return(fit)
 }
 
+# Import STA-Groups
+helper.requireFile(helper.getResultPath(STAGROUPS_FILEPATH))
 
-
-staGroups <- read.csv2(file = "./2013_Fahrlagen/STAGROUPS_v06.csv", stringsAsFactors = F)
+staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsAsFactors = F)
 staGroups$PARTNER[is.na(staGroups$PARTNER)] <- ""
 
 staNumbers <- unique(staGroups$ID)
@@ -56,9 +57,10 @@ for(i in x){
 }
 
 # get all Trains on all STA together
-folder <- "./result_detail_v11/"
-files <- list.files(path = paste0(folder, "STAs"), full.names = T)
-staNames <- gsub(".csv", "", list.files(path = paste0(folder, "STAs"), full.names = F))
+helper.safeCreateFolder(STA_RESULT_FOLDER)
+folder <- helper.getResultPath('')
+files <- list.files(path = helper.getResultPath(STA_RESULT_FOLDER), full.names = T)
+staNames <- gsub(".csv", "", list.files(path = helper.getResultPath(STA_RESULT_FOLDER), full.names = F))
 
 completeTrains <- data.frame()
 
@@ -79,7 +81,7 @@ for(n in 1:length(completeTrains$X)){
                              0.5 * calculate10kmWithI(avModel, min(100, completeTrains$VMAX[n]), completeTrains$BREAKCLASS[n], 7)
 }
   
-tempFrame <- read.csv2(file = paste0(folder, "TFZ_Frame.csv"))
+tempFrame <- read.csv2(file = helper.getResultPath(TEMP_TFZ_FRAME_FILEPATH))
 tempFrame <- tempFrame[tempFrame$VMAX >= 60,]
 tempFrame <- tempFrame[with(tempFrame, order(-VMAX, TOTALWEIGHT)), ]
 
@@ -104,8 +106,11 @@ best600 <- tempFrame[order(tempFrame[,"T10km"]),c("X", "T10km")][seq(600),]
 
 
 
-best90Oopti <- read.csv2(file = "./bottomup/merge_a(v)_v12/SelectedFiles_Opti_v01.csv", stringsAsFactors = F)$x
+best90Oopti <- read.csv2(file = paste0(helper.getResultPath(COVERING_RESULT_FOLDER), SELECTION_RESULT_FOLDER), stringsAsFactors = F)$x
 maxNumberOfModelTrains <- 30
+
+helper.safeCreateFolder(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER))
+optimization_result_prefix = "REM_"
 
 for(i in length(best90Oopti):2){
 #for(i in 16:10){
@@ -187,10 +192,10 @@ for(i in length(best90Oopti):2){
         }
     }
     
-    
-    write.csv2(currenTotalGain, file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_", rem, "/totalGain.csv"), row.names = F)
-    write.csv2(best90Oopti[i], file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_", rem, "/best90.csv"), row.names = F)
-    write.csv2(x = currentGainTrains, file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_", rem, "/gainTrains_v01.csv"), row.names = F)
+    helper.safeCreateFolder(paste0(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER),optimization_result_prefix, rem))
+    write.csv2(currenTotalGain, file = paste0(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER),optimization_result_prefix, rem, "/totalGain.csv"), row.names = F)
+    write.csv2(best90Oopti[i], file = paste0(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER),optimization_result_prefix, rem, "/best90.csv"), row.names = F)
+    write.csv2(x = currentGainTrains, file = paste0(helper.getResultPath(OPTIMIZATION_RESULT_FOLDER),optimization_result_prefix, rem, "/gainTrains_v01.csv"), row.names = F)
     
 }
 
@@ -202,7 +207,7 @@ print("bla")
 
 
 ############################################### continiue with next file ######################################
-
+if (F) {
 staGroups <- read.csv2(file = "./2013_Fahrlagen/STAGROUPS.csv", stringsAsFactors = F)
 staGroups$PARTNER[is.na(staGroups$PARTNER)] <- ""
 
@@ -358,3 +363,4 @@ table(allSelections$TFZ)
 
 # postoptimize BrH
 
+}
