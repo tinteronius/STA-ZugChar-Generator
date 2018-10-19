@@ -15,8 +15,7 @@ staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsA
 staGroups$PARTNER[is.na(staGroups$PARTNER)] <- ""
 
 dt <- read.csv2(file = helper.getResultPath(TEMP_TFZ_FRAME_FILEPATH))
-dt$VMAX <- NULL
-dt <- unique(dt)
+dt <- dt[!duplicated(tempFrame[,c("TFZ", "TOTALWEIGHT", "NUM_TFZ")]),c("TFZ", "TOTALWEIGHT", "NUM_TFZ", "VMAX")]
 #dt <- dt[!duplicated(dt[, c("TOTALWEIGHT", "BREAKCLASS", "TFZ", "NUM_TFZ")]),]
 dt <- dt[dt$TOTALWEIGHT >= 500,]
 
