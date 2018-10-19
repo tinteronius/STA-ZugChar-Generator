@@ -58,3 +58,22 @@ BOTTOMUP_RESULT_FOLDER = "all90/"
 A_FRAME_RESULT_FOLDER = "a_frame/"
 
 source("bottomUp_new_a(v).R")
+
+# # # # # # # # # # # # # # 
+# 4a # setCoveringOptimizer
+# # ##
+
+BOTTOMUP_REDUCED_RESULT_FOLDER = "all90/reduced/"
+COVERING_RESULT_FOLDER = "bottomup/merge_av/"
+
+source("setCoveringOptimizer.R")
+
+# # # # # # # # # # # # # # 
+# 4b # Combining two 90% Characteristics
+# # ##
+
+# coming soon
+
+# # # # # # # # # # # # # # 
+# 5 # 
+# # #

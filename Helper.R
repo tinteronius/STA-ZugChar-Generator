@@ -3,7 +3,7 @@
 # . Helepr Functions for 
 
 # install all needed packages if not installed
-helper.neededPackages = c("parallel", "doParallel", "foreach", "lpSolveAPI", "ggplot2")
+helper.neededPackages = c("parallel", "doParallel", "foreach", "lpSolveAPI", "ggplot2", "plyr")
 helper.updatePackages = function() {
   needed_packages = helper.neededPackages
   new_packages = needed_packages[!(needed_packages %in% installed.packages()[,"Package"])]
@@ -55,5 +55,6 @@ library("doParallel")
 library("foreach")
 library("lpSolveAPI")
 library("ggplot2")
+library("plyr")
 
 helper.included = T
