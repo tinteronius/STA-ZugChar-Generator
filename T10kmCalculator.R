@@ -35,14 +35,14 @@ getA_M <- function(avModel, s_actual, v_actual, vmax){
   return(list(a_m, v_actual-1))
 }
 
-calculate10kmWithI <- function(avModel, vmax, breakclass, i_max){
+calculate10kmWithI <- function(avModel, vmax, breakclass, i_max, s_max = 1000){
   a_dec <- ifelse(breakclass == "G", -0.2, -0.35)
   avModel$a_i <- avModel$a - 9.81* i_max / 1000
   avModel$s_brems <- avModel$v*avModel$v/(-3.6 * 3.6 * 2* a_dec)
   avModel$t_brems <- avModel$v/(-3.6*a_dec)
   
   # accelerate 1000m with i = 0%o
-  s_max <- 1000
+  #s_max <- 1000
   ind <- max(which(avModel$s_kum <= s_max))
   v <- min(avModel$v[ind], vmax)
   ind <- which(avModel$v == v)
