@@ -18,8 +18,10 @@ files <- list.files(STA_FOLDER, full.names = T, pattern = ".csv$")
 allSta <- unlist(lapply(strsplit(files, "_"), function(x){x[4]}))
 staNumber <- sort(unique(allSta))
 
+
 # Map which BTS belong to a STA
 sta <- data.frame(ID <- integer(0), BTS = integer(0), stringsAsFactors = F)
+mapping <- read.csv2(file = STA_MAPPING_FILE, stringsAsFactors = F) 
 
 for(s in staNumber){
     print(s)
@@ -33,14 +35,18 @@ for(s in staNumber){
     }
     bts <- bts[bts != "Path Cost " & bts != "Total Priority " & bts != "Total Priority/No.Of Fahrwege "]
     # take only bts with no numbers within
-    bts <- bts[!grepl(".*\\d+.*", bts)]
-    sta <- rbind(sta, data.frame(ID = s, BTS = bts, stringsAsFactors = F))
+    #bts <- bts[!grepl(".*\\d+.*", bts)]
+    old <- mapping$alt[mapping$neu == s]
+    sta <- rbind(sta, data.frame(NEW_ID = s, ID = unlist(strsplit(old, "_"))[1], 
+                                 OLD_STA = old, BTS = bts, stringsAsFactors = F))
 }
 
 # Manual Refactorings
-id <- c("1", "5", "9A", "173C")
+id <- c("001", "005", "9A", "173C")
+new_id <- c("201", "205", "203", "631")
+old_sta <- c("1", "005", "9A", "173C")
 bts <- c("AWLB", "AWLB", "AWLB", "RSG")
-sta <- rbind(sta, data.frame(ID = id, BTS = bts, stringsAsFactors = F))
+sta <- rbind(sta, data.frame(NEW_ID = new_id, ID = id, OLD_STA = old_sta, BTS = bts, stringsAsFactors = F))
 
 
 write.csv2(sta, file = helper.getResultPath(BTS2STA_FILEPATH), row.names = F)
@@ -225,6 +231,7 @@ helper.safeCreateFolder(helper.getResultPath(STA_RESULT_FOLDER))
 sta_resultfile_prefix = paste0(helper.getResultPath(STA_RESULT_FOLDER), "STA_")
   
 staList <- strsplit(data$STA_FIT, "#")
+staNumber <- sort(unique(sta$ID))
     
 for(i in 1:length(staNumber)){
     ind <- which(unlist(lapply(staList, function(x) staNumber[i] %in% x)))
