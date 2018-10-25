@@ -229,7 +229,11 @@ write.csv2(data, file = helper.getResultPath(FAHRLAGEN_STAFIT_FILEPATH), row.nam
 
 helper.safeCreateFolder(helper.getResultPath(STA_RESULT_FOLDER))
 sta_resultfile_prefix = paste0(helper.getResultPath(STA_RESULT_FOLDER), "STA_")
-  
+
+# Exclude Wolken-BTS from STA trainpaths
+wolken <- read.csv2(file = WOLKEN_FILEPATH, stringsAsFactors = F)
+sta = sta[!(sta$BTS %in% wolken$BSTID) ,]
+
 staList <- strsplit(data$STA_FIT, "#")
 staNumber <- sort(unique(sta$ID))
     

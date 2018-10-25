@@ -24,6 +24,7 @@ source("Helper.R")
 
 # Input:
 #STA_FOLDER = "../ZugChar_Untersuchungen/STAs_/"
+WOLKEN_FILEPATH = "2013_Fahrlagen/WolkenBST.csv"
 STA_FOLDER = "./2013_Fahrlagen/STA-Laufwege_geteiltMANUELL/"
 # Output:
 FAHRLAGEN_STAFIT_FILEPATH = "Fahrlagen_14.11.2013_final_v12_STAFIT.csv"
