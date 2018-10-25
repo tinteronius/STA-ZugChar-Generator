@@ -1,4 +1,4 @@
-# # # # # # # # # # # # # # 
+# # # # # # # # # # # # # #
 # ! # Change Working directory: Session > Set Working Directory > To Source File Location
 # # #
 
@@ -9,25 +9,25 @@ source("T10kmCalculator.R")
 # . Preparing STAs and Fahrlagen for further calculations
 
 
-# # # # # # # # # # # # # # 
+# # # # # # # # # # # # # #
 # Maping STA and BTS
 
 if (DO_MAPPING_STA_BTS) { # Checking Block if Mapping enabled
 
 files <- list.files(STA_FOLDER, full.names = T, pattern = ".csv$")
-allSta <- unlist(lapply(strsplit(files, "_"), function(x){x[4]}))
+allSta <- unlist(lapply(strsplit(files, "_"), function(x){x[5]}))
 staNumber <- sort(unique(allSta))
 
 
 # Map which BTS belong to a STA
 sta <- data.frame(ID <- integer(0), BTS = integer(0), stringsAsFactors = F)
-mapping <- read.csv2(file = STA_MAPPING_FILE, stringsAsFactors = F) 
+mapping <- read.csv2(file = STA_MAPPING_FILE, stringsAsFactors = F)
 
 for(s in staNumber){
     print(s)
     ind <- which(s == allSta)
     if(length(ind) > 2){stop("more than 2 STA!")}
-    
+
     f <- files[ind]
     bts <- integer(0)
     for(i in 1:length(f)){
@@ -37,7 +37,7 @@ for(s in staNumber){
     # take only bts with no numbers within
     #bts <- bts[!grepl(".*\\d+.*", bts)]
     old <- mapping$alt[mapping$neu == s]
-    sta <- rbind(sta, data.frame(NEW_ID = s, ID = unlist(strsplit(old, "_"))[1], 
+    sta <- rbind(sta, data.frame(NEW_ID = s, ID = unlist(strsplit(old, "_"))[1],
                                  OLD_STA = old, BTS = bts, stringsAsFactors = F))
 }
 
@@ -52,12 +52,12 @@ sta <- rbind(sta, data.frame(NEW_ID = new_id, ID = id, OLD_STA = old_sta, BTS = 
 write.csv2(sta, file = helper.getResultPath(BTS2STA_FILEPATH), row.names = F)
 
 } else { # Checking Block if Mapping enabled
-  
+
   sta <- read.csv2(file = helper.getResultPath(BTS2STA_FILEPATH), stringsAsFactors = F)
-  
+
 }
 
-# # # # # # # # # # # # # # 
+# # # # # # # # # # # # # #
 # DEBUGGING?
 
 #for(w in finveBTS$FinVe.BTS){
@@ -66,7 +66,7 @@ write.csv2(sta, file = helper.getResultPath(BTS2STA_FILEPATH), row.names = F)
 #}
 
 
-# # # # # # # # # # # # # # 
+# # # # # # # # # # # # # #
 # calculate if two STA overlap
 # . Known Issue: Error when multiple groups found -> merge into new big group??
 
@@ -91,7 +91,7 @@ for(s in 1:(length(staNumber)-1)){
         for(b in tempBTS){
             count <- count + (b %in% sta$BTS[sta$ID == staNumber[k]])
         }
-        
+
         threshold <- max(floor(0.1*len), 5)
         if(count >= threshold){
             #print(paste(s, k))
@@ -106,7 +106,7 @@ for(s in 1:(length(staNumber)-1)){
             }
         }
     }
-    
+
     overlappings$PARTNERS[s] <- paste(partners, collapse = "#")
     overlappings$BIG_OVERLAP[s] <- paste(overlap, collapse = "#")
     overlappings$RATIO_OVERLAP[s] <- paste(ratio, collapse = "#")
@@ -131,7 +131,7 @@ for(i in 1:length(overlappings$STA)){
         tempID <- id
         id <- id + 1
     }
-    
+
     if(is.na(tempPartner) & overlappings$BIG_OVERLAP[i] != ""){
         tempPartner <- partner
         partner = partner + 1
@@ -139,7 +139,7 @@ for(i in 1:length(overlappings$STA)){
     staGroups$GROUP[i] <- tempID
     staGroups$PARTNER[i] <- tempPartner
     succ <- unlist(strsplit(overlappings$PARTNERS[i], "#"))
-    
+
     succ_group <- staGroups[which(staGroups$ID %in% succ),"GROUP"]
     if(any(!is.na(succ_group))){
         print(paste(i, succ[!is.na(succ_group)], "is already in a group!"))
@@ -179,11 +179,11 @@ write.csv2(staGroups, file = helper.getResultPath(STAGROUPS_FILEPATH), row.names
 
 } else { # Checking Block if Overlapping enabled
   helper.requireFile(helper.getResultPath(STAGROUPS_FILEPATH), "Try Copy from Input Folder.")
-  staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsAsFactors = F)  
+  staGroups <- read.csv2(file = helper.getResultPath(STAGROUPS_FILEPATH), stringsAsFactors = F)
 
 }
 
-# # # # # # # # # # # # # # 
+# # # # # # # # # # # # # #
 # Meassure share (STAFIT) Fahrlage on STA
 
 if (DO_STAFIT) { # Checking Block if STAFIT enabled
@@ -214,17 +214,17 @@ for(i in 1:nrow(data)){
         data$STA_FIT[i] <- ifelse(data$STA_FIT[i] == 0, staNames[id], paste(data$STA_FIT[i], staNames[id], sep = "#"))
     }
 }
-    
-sum(data$STA_FIT != 0)    
-write.csv2(data, file = helper.getResultPath(FAHRLAGEN_STAFIT_FILEPATH), row.names = F) 
+
+sum(data$STA_FIT != 0)
+write.csv2(data, file = helper.getResultPath(FAHRLAGEN_STAFIT_FILEPATH), row.names = F)
 
 } else { # Checking Block if Overlapping enabled
-  
+
   data <- read.csv2(file = helper.getResultPath(FAHRLAGEN_STAFIT_FILEPATH), stringsAsFactors = F)
-  
+
 }
 
-# # # # # # # # # # # # # # 
+# # # # # # # # # # # # # #
 # Map Fahrlagen to STA (...groups)
 
 helper.safeCreateFolder(helper.getResultPath(STA_RESULT_FOLDER))
@@ -236,24 +236,24 @@ sta = sta[!(sta$BTS %in% wolken$BSTID) ,]
 
 staList <- strsplit(data$STA_FIT, "#")
 staNumber <- sort(unique(sta$ID))
-    
+
 for(i in 1:length(staNumber)){
     ind <- which(unlist(lapply(staList, function(x) staNumber[i] %in% x)))
     if(length(ind) < 1){
         print(paste(i , "Kein Zug auf STA", staNumber[i],"!"))
         df <- data.frame(TRAINRUN = integer(0), TFZ = integer(0), NUM_TFZ = integer(0),
-                         VMAX= integer(0), TOTALLENGTH = integer(0), 
+                         VMAX= integer(0), TOTALLENGTH = integer(0),
                          TOTALWEIGHT = integer(0), BREAKCLASS = integer(0),
                          BrH = integer(0), LZB = integer(0), ELECTRIC = integer(0),
                          TRAINCLASS = integer(0), stringsAsFactors = F)
         write.csv2(df, file = paste0(sta_resultfile_prefix, staNumber[i], ".csv"))
         next()
         }
-    
+
     trainrun <- data$ANFORDERUNGNAME[ind]
-    
-    
-    
+
+
+
     vmax <- as.integer(data$VMAX[ind])
     brh <- as.integer(data$BrH[ind])
     tfzg <- data$TFZ[ind]
@@ -263,7 +263,7 @@ for(i in 1:length(staNumber)){
     num_tfz <- data$NUM_TFZ[ind]
     lzb <- as.logical(data$LZB[ind])
     trainclass <- data$TRAINCLASS[ind]
-    
+
     currentBTSinSTA <- sta$BTS[sta$ID == staNumber[i]]
     for(j in 1:length(trainrun)){
         changes <- unlist(strsplit(data$CHARARCTERISTIC_CHANGE[ind[j]], "#"))
@@ -272,22 +272,22 @@ for(i in 1:length(staNumber)){
             chg <- unlist(strsplit(changes[m], ":"))
             ### get index position of tfzchange and first BTS of STA
             trainPath <- unlist(strsplit(data$WAY[ind[j]], "#"))
-            
+
             idChange <- min(which(trainPath %in% chg[1]))
             idSTA <- min(unlist(lapply(lapply(currentBTSinSTA, function(x) trainPath %in% x), which)))
-            
+
             if(is.infinite(idChange) | is.infinite(idSTA)){
                 x <- unlist(strsplit(data$WAY[ind[j]], "#"))
                 x[which(x == paste0(chg[1],chg[1]))] <- chg[1]
                 data$WAY[ind[j]] <- paste(x, collapse = "#")
-                
+
                 trainPath <- unlist(strsplit(data$WAY[ind[j]], "#"))
                 idChange <- min(which(trainPath %in% chg[1]))
-                
+
                 if(is.infinite(idChange) | is.infinite(idSTA)){stop("BTS in trainPath not found")}
-                
+
             }
-            
+
             ### if tfzChange is on or after first BTS of STA then ignore it
             if (idChange > idSTA){ # replaced '>=' with '>' to match changes on the first BTS
                 print(paste("change on or after STA --> ignore it:", trainrun[j]))
@@ -338,13 +338,13 @@ for(i in 1:length(staNumber)){
             }
         }
     }
-    
+
     df <- data.frame(TRAINRUN = trainrun, TFZ = tfzg, NUM_TFZ = num_tfz,
-                     VMAX= vmax, TOTALLENGTH = totalLength, 
+                     VMAX= vmax, TOTALLENGTH = totalLength,
                      TOTALWEIGHT = totalMass, BREAKCLASS = breakclass,
                      BrH = brh, LZB = lzb, ELECTRIC = integer(length(lzb)),
                      TRAINCLASS = trainclass, stringsAsFactors = F)
-    
+
     for(p in 1:length(df$TRAINRUN)){
         #print(p)
         elem <- tfzNames[tfzNames$name == df$TFZ[p], ]
@@ -366,16 +366,16 @@ for(i in 1:length(staNumber)){
         df$ELECTRIC[p] <- as.integer(xmlGetAttr(tfz[[elem$i]][["Triebfahrzeugbaureihenvarianten"]][[elem$j]][["Stromartausruestungen"]][["Stromartausruestung"]][["Stromart"]],
                                                 "Schluessel", "0")) != 0
     }
-    
+
     write.csv2(df, file = paste0(sta_resultfile_prefix, staNumber[i], ".csv"))
-    
+
     print(paste("STA", staNumber[i], length(df$TRAINRUN)))
 }
 
 
-    
-################ STOP HERE AND CONTINUE WITH NEXT FILE #############################################################   
-    
+
+################ STOP HERE AND CONTINUE WITH NEXT FILE #############################################################
+
 if (F) {
 
 staAssignment <- data.frame(STA = integer(length(staNumber)), BTSn = integer(length(staNumber)), stringsAsFactors = F)
@@ -424,26 +424,26 @@ for(i in 1:length(staAssignment$STA)){
     }
     a <- unique(a)
     otherBTS <- unique(c(unlist(strsplit(finVeAssignment$OTHER_BTS[a], "#")), staFinVeBTS))
-    
-    
+
+
     a <- integer(0)
     for(j in 1:length(otherBTS)){
         a <- c(a, which(otherBTS[j] == finVeAssignment$BTS))
     }
     a <- unique(a)
-    
+
     otherSTA <- unique(unlist(strsplit(finVeAssignment$STAs[a], "#")))
     otherSTA <- otherSTA[otherSTA != tempSTA]
     staAssignment$OTHER_STA[i] <- paste(otherSTA, collapse = "#")
-    
-    
+
+
     staBTS <- sta$BSTID[sta$SYSTEMTRASSENANFORDERUNGID == tempSTA]
     a <- integer(0)
     for(j in 1:length(uniqueBTS)){
         if(uniqueBTS[j] %in% staBTS){a <- c(a,j)}
     }
     staAssignment$UNIQUE_BTSn[i] <- paste(uniqueBTS[a], collapse = "#")
-    
+
 }
 
 write.csv2(staAssignment, file = paste0("./result_detail_v3/", "STA_Assignment_v01", ".csv"), row.names = F)
